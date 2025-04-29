@@ -1,0 +1,102 @@
+blueprint:
+  name: Presence-and-Illuminance Light Switching
+  description: >
+    Turns a switch on when presence is detected and it's dark, and turns it off
+    after absence or bright conditions. Works with any room using presence and illuminance sensors.
+  domain: automation
+  input:
+    presence_sensor:
+      name: Presence Sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    illuminance_sensor:
+      name: Illuminance Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+    target_switch:
+      name: Switch or Light to Control
+      selector:
+        entity:
+          domain:
+            - switch
+            - light
+    min_illuminance:
+      name: Minimum Illuminance (for lights on)
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 200
+    max_illuminance:
+      name: Maximum Illuminance (for lights off)
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 1000
+    delay_off:
+      name: Delay before turning off (minutes)
+      default: 2
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+
+trigger:
+  - platform: state
+    entity_id: !input presence_sensor
+  - platform: numeric_state
+    entity_id: !input illuminance_sensor
+    below: !input min_illuminance
+  - platform: numeric_state
+    entity_id: !input illuminance_sensor
+    above: !input max_illuminance
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input presence_sensor
+                state: "on"
+              - condition: numeric_state
+                entity_id: !input illuminance_sensor
+                below: !input min_illuminance
+        sequence:
+          - service: homeassistant.turn_on
+            target:
+              entity_id: !input target_switch
+
+      - conditions:
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "off"
+        sequence:
+          - delay:
+              minutes: !input delay_off
+          - service: homeassistant.turn_off
+            target:
+              entity_id: !input target_switch
+
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: numeric_state
+                entity_id: !input illuminance_sensor
+                above: !input max_illuminance
+              - condition: state
+                entity_id: !input presence_sensor
+                state: "off"
+        sequence:
+          - service: homeassistant.turn_off
+            target:
+              entity_id: !input target_switch
+
+mode: restart
