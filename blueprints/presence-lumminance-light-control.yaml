@@ -75,7 +75,7 @@ action:
             data:
               name: "Presence Lighting"
               message: >
-                Turning ON: Presence detected and illuminance below {{ states(!input illuminance_sensor) }} lux.
+                {{ "Turning ON: Presence detected and illuminance is " ~ states(illuminance_sensor) ~ " lux (below threshold)." }}
           - service: homeassistant.turn_on
             target:
               entity_id: !input target_switch
@@ -89,8 +89,8 @@ action:
           - service: logbook.log
             data:
               name: "Presence Lighting"
-              message: >
-                Presence not detected. Waiting {{ !input delay_off }} minutes before turning off.
+            message: >
+              {{ "Presence not detected. Waiting " ~ delay_off ~ " minutes before turning off." }}
           - delay:
               minutes: !input delay_off
           - service: homeassistant.turn_off
@@ -115,8 +115,8 @@ action:
           - service: logbook.log
             data:
               name: "Presence Lighting"
-              message: >
-                Turning OFF: Bright conditions ({{ states(!input illuminance_sensor) }} lux) and no presence.
+              message: "Turned OFF after delay due to no presence."
+
           - service: homeassistant.turn_off
             target:
               entity_id: !input target_switch
