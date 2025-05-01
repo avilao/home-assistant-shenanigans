@@ -60,6 +60,7 @@ condition: []
 
 action:
   - choose:
+      # Turn on if presence and illuminance is below threshold
       - conditions:
           - condition: and
             conditions:
@@ -70,21 +71,37 @@ action:
                 entity_id: !input illuminance_sensor
                 below: !input min_illuminance
         sequence:
+          - service: logbook.log
+            data:
+              name: "Presence Lighting"
+              message: >
+                Turning ON: Presence detected and illuminance below {{ states(!input illuminance_sensor) }} lux.
           - service: homeassistant.turn_on
             target:
               entity_id: !input target_switch
 
+      # Turn off if no presence (with delay)
       - conditions:
           - condition: state
             entity_id: !input presence_sensor
             state: "off"
         sequence:
+          - service: logbook.log
+            data:
+              name: "Presence Lighting"
+              message: >
+                Presence not detected. Waiting {{ !input delay_off }} minutes before turning off.
           - delay:
               minutes: !input delay_off
           - service: homeassistant.turn_off
             target:
               entity_id: !input target_switch
+          - service: logbook.log
+            data:
+              name: "Presence Lighting"
+              message: "Turned OFF after delay due to no presence."
 
+      # Turn off if illuminance is above threshold and no presence
       - conditions:
           - condition: and
             conditions:
@@ -95,6 +112,11 @@ action:
                 entity_id: !input presence_sensor
                 state: "off"
         sequence:
+          - service: logbook.log
+            data:
+              name: "Presence Lighting"
+              message: >
+                Turning OFF: Bright conditions ({{ states(!input illuminance_sensor) }} lux) and no presence.
           - service: homeassistant.turn_off
             target:
               entity_id: !input target_switch
