@@ -84,9 +84,14 @@ trigger:
     below: !input heat_threshold
   # Time-based periodic check with variable interval
   - platform: time_pattern
-    minutes: "{{ '/' ~ !input check_interval }}"
+    minutes: "*"
 
-condition: []
+variables:
+  check_minutes: !input check_interval
+
+condition:
+  - condition: template
+    value_template: "{{ now().minute % check_minutes == 0 }}"
 
 action:
   - choose:
