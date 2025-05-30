@@ -1,0 +1,154 @@
+blueprint:
+  name: Presence-and-Temperature AC Control (Heat & Cool)
+  description: >
+    Controls an AC/Heat pump based on presence and temperature. Switches between cooling and heating modes
+    automatically based on temperature thresholds. Turns off when room is unoccupied.
+  domain: automation
+  input:
+    presence_sensor:
+      name: Presence Sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    temperature_sensor:
+      name: Temperature Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    climate_unit:
+      name: Climate Control Unit
+      selector:
+        entity:
+          domain: climate
+    cool_threshold:
+      name: Cooling Threshold (turn on cooling above this)
+      default: 25
+      selector:
+        number:
+          min: 20
+          max: 35
+          unit_of_measurement: °C
+    heat_threshold:
+      name: Heating Threshold (turn on heating below this)
+      default: 18
+      selector:
+        number:
+          min: 10
+          max: 25
+          unit_of_measurement: °C
+    target_cool_temp:
+      name: Target Temperature for Cooling
+      default: 23
+      selector:
+        number:
+          min: 18
+          max: 30
+          unit_of_measurement: °C
+    target_heat_temp:
+      name: Target Temperature for Heating
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 28
+          unit_of_measurement: °C
+    delay_off:
+      name: Delay before turning off (minutes)
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+
+trigger:
+  - platform: state
+    entity_id: !input presence_sensor
+  - platform: numeric_state
+    entity_id: !input temperature_sensor
+    above: !input cool_threshold
+  - platform: numeric_state
+    entity_id: !input temperature_sensor
+    below: !input heat_threshold
+
+condition: []
+
+action:
+  - choose:
+      # Cooling mode when too warm
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input presence_sensor
+                state: "on"
+              - condition: numeric_state
+                entity_id: !input temperature_sensor
+                above: !input cool_threshold
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: cool
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate_unit
+            data:
+              temperature: !input target_cool_temp
+
+      # Heating mode when too cold
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input presence_sensor
+                state: "on"
+              - condition: numeric_state
+                entity_id: !input temperature_sensor
+                below: !input heat_threshold
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: heat
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate_unit
+            data:
+              temperature: !input target_heat_temp
+
+      # Turn off when no presence
+      - conditions:
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "off"
+        sequence:
+          - delay:
+              minutes: !input delay_off
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: "off"
+
+      # Comfort zone - temperature is good, turn off climate control
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: numeric_state
+                entity_id: !input temperature_sensor
+                below: !input cool_threshold
+              - condition: numeric_state
+                entity_id: !input temperature_sensor
+                above: !input heat_threshold
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: "off"
+
+mode: restart
