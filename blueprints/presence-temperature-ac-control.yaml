@@ -82,9 +82,9 @@ trigger:
   - platform: numeric_state
     entity_id: !input temperature_sensor
     below: !input heat_threshold
-  # Time-based periodic check
+  # Time-based periodic check with variable interval
   - platform: time_pattern
-    minutes: /{{ !input check_interval }}
+    minutes: "{{ '/' ~ !input check_interval }}"
 
 condition: []
 
