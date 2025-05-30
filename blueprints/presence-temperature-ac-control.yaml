@@ -3,6 +3,7 @@ blueprint:
   description: >
     Controls an AC/Heat pump based on presence and temperature. Switches between cooling and heating modes
     automatically based on temperature thresholds. Turns off when room is unoccupied.
+    Periodically checks to ensure climate control status matches desired conditions.
   domain: automation
   input:
     presence_sensor:
@@ -61,8 +62,18 @@ blueprint:
           min: 0
           max: 60
           unit_of_measurement: minutes
+    check_interval:
+      name: Status Check Interval (minutes)
+      description: How often to verify and update climate control status
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 30
+          unit_of_measurement: minutes
 
 trigger:
+  # Event-based triggers
   - platform: state
     entity_id: !input presence_sensor
   - platform: numeric_state
@@ -71,6 +82,9 @@ trigger:
   - platform: numeric_state
     entity_id: !input temperature_sensor
     below: !input heat_threshold
+  # Time-based periodic check
+  - platform: time_pattern
+    minutes: /{{ !input check_interval }}
 
 condition: []
 
