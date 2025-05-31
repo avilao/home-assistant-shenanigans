@@ -76,22 +76,39 @@ trigger:
   # Event-based triggers
   - platform: state
     entity_id: !input presence_sensor
+    id: "presence_trigger"
   - platform: numeric_state
     entity_id: !input temperature_sensor
     above: !input cool_threshold
+    id: "temp_high_trigger"
   - platform: numeric_state
     entity_id: !input temperature_sensor
     below: !input heat_threshold
+    id: "temp_low_trigger"
   # Time-based periodic check with variable interval
   - platform: time_pattern
     minutes: "*"
+    id: "time_check"
 
 variables:
   check_minutes: !input check_interval
+  trigger_type: "{{ trigger.id }}"
 
 condition:
-  - condition: template
-    value_template: "{{ now().minute % check_minutes == 0 }}"
+  - condition: or
+    conditions:
+      # Allow all non-time-based triggers to pass through
+      - condition: not
+        conditions:
+          - condition: template
+            value_template: "{{ trigger_type == 'time_check' }}"
+      # For time-based trigger, only allow at specified intervals
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ trigger_type == 'time_check' }}"
+          - condition: template
+            value_template: "{{ now().minute % check_minutes == 0 }}"
 
 action:
   - choose:
