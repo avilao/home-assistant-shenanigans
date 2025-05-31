@@ -93,6 +93,9 @@ trigger:
 variables:
   check_minutes: !input check_interval
   trigger_type: "{{ trigger.id }}"
+  climate_unit: !input climate_unit
+  target_cool_temp: !input target_cool_temp
+  target_heat_temp: !input target_heat_temp
 
 condition:
   - condition: or
@@ -132,7 +135,7 @@ action:
                         state: "cool"
                   - condition: template
                     value_template: >
-                      {{ state_attr(states(!input climate_unit), 'temperature') != !input target_cool_temp }}
+                      {{ state_attr(states(trigger.variables.climate_unit), 'temperature') != trigger.variables.target_cool_temp }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -165,7 +168,7 @@ action:
                         state: "heat"
                   - condition: template
                     value_template: >
-                      {{ state_attr(states(!input climate_unit), 'temperature') != !input target_heat_temp }}
+                      {{ state_attr(states(trigger.variables.climate_unit), 'temperature') != trigger.variables.target_heat_temp }}
         sequence:
           - service: climate.set_hvac_mode
             target:
