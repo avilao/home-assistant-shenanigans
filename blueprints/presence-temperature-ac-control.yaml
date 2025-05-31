@@ -135,7 +135,7 @@ action:
                         state: "cool"
                   - condition: template
                     value_template: >
-                      {{ state_attr(states(trigger.variables.climate_unit), 'temperature') != trigger.variables.target_cool_temp }}
+                      {{ states(trigger.variables.climate_unit).attributes.temperature != trigger.variables.target_cool_temp }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -168,7 +168,7 @@ action:
                         state: "heat"
                   - condition: template
                     value_template: >
-                      {{ state_attr(states(trigger.variables.climate_unit), 'temperature') != trigger.variables.target_heat_temp }}
+                      {{ states(trigger.variables.climate_unit).attributes.temperature != trigger.variables.target_heat_temp }}
         sequence:
           - service: climate.set_hvac_mode
             target:
