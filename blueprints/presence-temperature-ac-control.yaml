@@ -85,23 +85,21 @@ action:
   - choose:
       # Cooling mode when too warm
       - conditions:
-          - condition: and
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "on"
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            above: !input cool_threshold
+          # Check if action is needed (unit is off or in wrong mode)
+          - condition: or
             conditions:
               - condition: state
-                entity_id: !input presence_sensor
-                state: "on"
-              - condition: numeric_state
-                entity_id: !input temperature_sensor
-                above: !input cool_threshold
-              # Check if action is needed (unit is off or in wrong mode)
-              - condition: or
-                conditions:
-                  - condition: state
-                    entity_id: !input climate_unit
-                    state: "off"
-                  - condition: template
-                    value_template: >
-                      {{ states(climate_unit) != 'cool' }}
+                entity_id: !input climate_unit
+                state: "off"
+              - condition: template
+                value_template: >
+                  {{ states(climate_unit) != 'cool' }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -116,23 +114,21 @@ action:
 
       # Heating mode when too cold
       - conditions:
-          - condition: and
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "on"
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            below: !input heat_threshold
+          # Check if action is needed (unit is off or in wrong mode)
+          - condition: or
             conditions:
               - condition: state
-                entity_id: !input presence_sensor
-                state: "on"
-              - condition: numeric_state
-                entity_id: !input temperature_sensor
-                below: !input heat_threshold
-              # Check if action is needed (unit is off or in wrong mode)
-              - condition: or
-                conditions:
-                  - condition: state
-                    entity_id: !input climate_unit
-                    state: "off"
-                  - condition: template
-                    value_template: >
-                      {{ states(climate_unit) != 'heat' }}
+                entity_id: !input climate_unit
+                state: "off"
+              - condition: template
+                value_template: >
+                  {{ states(climate_unit) != 'heat' }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -156,31 +152,29 @@ action:
               - condition: state
                 entity_id: !input climate_unit
                 state: "off"
-            sequence:
-              - delay:
-                  seconds: "{{ (check_minutes * 60) - 30 }}"
-              - service: climate.set_hvac_mode
-                target:
-                  entity_id: !input climate_unit
-                data:
-                  hvac_mode: "off"
+        sequence:
+          - delay:
+              seconds: "{{ (check_minutes * 60) - 30 }}"
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: "off"
 
-      # Comfort zone - temperature is good, turn off climate control
+      # Turn off when temperature is in comfort zone
       - conditions:
-          - condition: and
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            below: !input cool_threshold
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            above: !input heat_threshold
+          # Only turn off if not already off
+          - condition: not
             conditions:
-              - condition: numeric_state
-                entity_id: !input temperature_sensor
-                below: !input cool_threshold
-              - condition: numeric_state
-                entity_id: !input temperature_sensor
-                above: !input heat_threshold
-              # Only turn off if not already off
-              - condition: not
-                conditions:
-                  - condition: state
-                    entity_id: !input climate_unit
-                    state: "off"
+              - condition: state
+                entity_id: !input climate_unit
+                state: "off"
         sequence:
           - delay:
               seconds: "{{ (check_minutes * 60) - 30 }}"
