@@ -115,20 +115,15 @@ action:
               - condition: numeric_state
                 entity_id: !input temperature_sensor
                 above: !input cool_threshold
-              # Check if cooling is needed (either off or not cooling effectively)
+              # Check if action is needed (unit is off or in wrong mode)
               - condition: or
                 conditions:
                   - condition: state
                     entity_id: !input climate_unit
                     state: "off"
-                  - condition: and
-                    conditions:
-                      - condition: state
-                        entity_id: !input climate_unit
-                        state: "cool"
-                      - condition: template
-                        value_template: >
-                          {{ state_attr(climate_unit, 'current_temperature') > (target_cool_temp + 1) }}
+                  - condition: template
+                    value_template: >
+                      {{ states(climate_unit) != 'cool' }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -151,20 +146,15 @@ action:
               - condition: numeric_state
                 entity_id: !input temperature_sensor
                 below: !input heat_threshold
-              # Check if heating is needed (either off or not heating effectively)
+              # Check if action is needed (unit is off or in wrong mode)
               - condition: or
                 conditions:
                   - condition: state
                     entity_id: !input climate_unit
                     state: "off"
-                  - condition: and
-                    conditions:
-                      - condition: state
-                        entity_id: !input climate_unit
-                        state: "heat"
-                      - condition: template
-                        value_template: >
-                          {{ state_attr(climate_unit, 'current_temperature') < (target_heat_temp - 1) }}
+                  - condition: template
+                    value_template: >
+                      {{ states(climate_unit) != 'heat' }}
         sequence:
           - service: climate.set_hvac_mode
             target:
