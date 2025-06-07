@@ -54,14 +54,6 @@ blueprint:
           min: 15
           max: 28
           unit_of_measurement: °C
-    delay_off:
-      name: Delay before turning off (minutes)
-      default: 5
-      selector:
-        number:
-          min: 0
-          max: 60
-          unit_of_measurement: minutes
     check_interval:
       name: Status Check Interval (minutes)
       description: How often to verify and update climate control status
@@ -73,10 +65,6 @@ blueprint:
           unit_of_measurement: minutes
 
 trigger:
-  # Presence changes
-  - platform: state
-    entity_id: !input presence_sensor
-    id: "presence_trigger"
   # Regular interval check
   - platform: time_pattern
     minutes: "*"
@@ -84,24 +72,14 @@ trigger:
 
 variables:
   check_minutes: !input check_interval
-  trigger_type: "{{ trigger.id }}"
   climate_unit: !input climate_unit
   target_cool_temp: !input target_cool_temp
   target_heat_temp: !input target_heat_temp
 
 condition:
-  - condition: or
-    conditions:
-      # Allow presence changes to always trigger
-      - condition: trigger
-        id: presence_trigger
-      # For time-based trigger, only allow at specified intervals
-      - condition: and
-        conditions:
-          - condition: trigger
-            id: time_check
-          - condition: template
-            value_template: "{{ now().minute % check_minutes == 0 }}"
+  # Only allow at specified intervals
+  - condition: template
+    value_template: "{{ now().minute % check_minutes == 0 }}"
 
 action:
   - choose:
@@ -178,14 +156,14 @@ action:
               - condition: state
                 entity_id: !input climate_unit
                 state: "off"
-        sequence:
-          - delay:
-              minutes: !input delay_off
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climate_unit
-            data:
-              hvac_mode: "off"
+            sequence:
+              - delay:
+                  seconds: "{{ (check_minutes * 60) - 30 }}"
+              - service: climate.set_hvac_mode
+                target:
+                  entity_id: !input climate_unit
+                data:
+                  hvac_mode: "off"
 
       # Comfort zone - temperature is good, turn off climate control
       - conditions:
@@ -204,6 +182,8 @@ action:
                     entity_id: !input climate_unit
                     state: "off"
         sequence:
+          - delay:
+              seconds: "{{ (check_minutes * 60) - 30 }}"
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climate_unit
