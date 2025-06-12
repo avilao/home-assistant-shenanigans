@@ -90,21 +90,21 @@ condition:
 action:
   - service: persistent_notification.create
     data:
-      message: >
-        Checking conditions:
-        Time check: {{ now().minute % check_minutes == 0 }}
-        Climate unit state: {{ states(climate_unit) }}
-        Independent sensor state: {{ states(input.independent_sensor) }}
-        Presence sensor state: {{ states(input.presence_sensor) }}
-        Temperature: {{ states(input.temperature_sensor) }}
-      title: "AC Control Debug"
+    message: >
+      Checking conditions:
+      Time check: {{ now().minute % check_minutes == 0 }}
+      Climate unit state: {{ states(climate_unit) }}
+      Independent sensor state: {{ states(independent_sensor) }}
+      Presence sensor state: {{ states(presence_sensor) }}
+      Temperature: {{ states(temperature_sensor) }}
+          title: "AC Control Debug"
   - choose:
       # Turn off when independent sensor doesn't match climate state
       - conditions:
           - condition: template
             value_template: >
-              {{ states(climate_unit) == 'off' and states(input.independent_sensor) == 'on' or
-                 states(climate_unit) != 'off' and states(input.independent_sensor) == 'off' }}
+              {{ states(climate_unit) == 'off' and states(independent_sensor) == 'on' or
+                 states(climate_unit) != 'off' and states(independent_sensor) == 'off' }}
         sequence:
           - service: climate.set_hvac_mode
             target:
