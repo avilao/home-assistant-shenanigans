@@ -63,6 +63,12 @@ blueprint:
           min: 1
           max: 30
           unit_of_measurement: minutes
+    independent_sensor:
+      name: Independent Power Sensor
+      description: Binary sensor that confirms if the unit is on/off
+      selector:
+        entity:
+          domain: binary_sensor
 
 trigger:
   # Regular interval check
@@ -83,6 +89,19 @@ condition:
 
 action:
   - choose:
+      # Turn off when independent sensor doesn't match climate state
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(climate_unit) == 'off' and is_state(independent_sensor, 'on') or
+                 states(climate_unit) != 'off' and is_state(independent_sensor, 'off') }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_unit
+            data:
+              hvac_mode: "off"
+
       # Cooling mode when too warm
       - conditions:
           - condition: state
