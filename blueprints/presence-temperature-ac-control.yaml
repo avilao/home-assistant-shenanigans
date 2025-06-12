@@ -81,6 +81,9 @@ variables:
   climate_unit: !input climate_unit
   target_cool_temp: !input target_cool_temp
   target_heat_temp: !input target_heat_temp
+  independent_sensor: !input independent_sensor
+  presence_sensor: !input presence_sensor
+  temperature_sensor: !input temperature_sensor
 
 condition:
   # Only allow at specified intervals
