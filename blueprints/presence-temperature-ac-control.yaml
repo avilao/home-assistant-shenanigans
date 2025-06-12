@@ -90,14 +90,8 @@ condition:
 action:
   - service: persistent_notification.create
     data:
-    message: >
-      Checking conditions:
-      Time check: {{ now().minute % check_minutes == 0 }}
-      Climate unit state: {{ states(climate_unit) }}
-      Independent sensor state: {{ states(independent_sensor) }}
-      Presence sensor state: {{ states(presence_sensor) }}
-      Temperature: {{ states(temperature_sensor) }}
-          title: "AC Control Debug"
+      title: "AC Control Debug"
+      message: "Checking conditions:\nTime check: {{ now().minute % check_minutes == 0 }}\nClimate unit state: {{ states(climate_unit) }}\nIndependent sensor state: {{ states(independent_sensor) }}\nPresence sensor state: {{ states(presence_sensor) }}\nTemperature: {{ states(temperature_sensor) }}"
   - choose:
       # Turn off when independent sensor doesn't match climate state
       - conditions:
