@@ -1,0 +1,97 @@
+blueprint:
+  name: Presence Sensor Light Control with Periodic Off Check
+  description: >
+    Turns lights on when presence is detected, and turns off after a delay when no presence is detected.
+    Periodically checks every X minutes to ensure lights are off if no presence is detected.
+  domain: automation
+  input:
+    presence_sensor:
+      name: Presence Sensor
+      description: The motion or presence sensor that triggers the lights.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class:
+            - motion
+            - occupancy
+            - presence
+
+    target_light:
+      name: Target Light(s)
+      description: The light(s) to control.
+      selector:
+        target:
+          entity:
+            domain: light
+
+    delay_off:
+      name: Turn Off Delay
+      description: Time (in seconds) to wait after no presence before turning lights off.
+      default: 60
+      selector:
+        number:
+          min: 5
+          max: 1800
+          unit_of_measurement: seconds
+          mode: slider
+
+    periodic_check_minutes:
+      name: Periodic Check Interval
+      description: How often to check lights to turn them off if no presence is detected.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: minutes
+          mode: slider
+
+mode: restart
+
+trigger:
+  # Trigger when sensor state changes
+  - platform: state
+    entity_id: !input presence_sensor
+
+  # Trigger periodically every X minutes
+  - platform: time_pattern
+    minutes: "/!input periodic_check_minutes"
+
+action:
+  - choose:
+      # Sensor is on → turn lights on
+      - conditions:
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "on"
+        sequence:
+          - service: light.turn_on
+            target: !input target_light
+
+      # Sensor is off → wait for delay and then turn off if still off
+      - conditions:
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "off"
+        sequence:
+          - delay:
+              seconds: !input delay_off
+          - condition: state
+            entity_id: !input presence_sensor
+            state: "off"
+          - service: light.turn_off
+            target: !input target_light
+
+      # Periodic check: sensor off and light on → turn off
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input presence_sensor
+                state: "off"
+              - condition: state
+                entity_id: !input target_light
+                state: "on"
+        sequence:
+          - service: light.turn_off
+            target: !input target_light
