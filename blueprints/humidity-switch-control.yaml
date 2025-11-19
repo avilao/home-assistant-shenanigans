@@ -1,0 +1,83 @@
+blueprint:
+  name: Humidity-Based Light Switching
+  description: >
+    Turns a light or switch on when humidity exceeds a threshold, and turns it off
+    when humidity drops below a lower threshold. Useful for bathroom exhaust fans or dehumidifiers.
+  domain: automation
+  input:
+    humidity_sensor:
+      name: Humidity Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+    target_switch:
+      name: Switch or Light to Control
+      selector:
+        entity:
+          domain:
+            - switch
+            - light
+    high_humidity_threshold:
+      name: High Humidity Threshold (turn on)
+      description: Turn on when humidity rises above this level
+      default: 70
+      selector:
+        number:
+          min: 30
+          max: 100
+          unit_of_measurement: "%"
+    low_humidity_threshold:
+      name: Low Humidity Threshold (turn off)
+      description: Turn off when humidity drops below this level
+      default: 60
+      selector:
+        number:
+          min: 30
+          max: 100
+          unit_of_measurement: "%"
+    delay_off:
+      name: Delay before turning off (minutes)
+      description: Wait this long after humidity drops before turning off
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input humidity_sensor
+    above: !input high_humidity_threshold
+  - platform: numeric_state
+    entity_id: !input humidity_sensor
+    below: !input low_humidity_threshold
+
+condition: []
+
+action:
+  - choose:
+      # Turn on when humidity exceeds high threshold
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input humidity_sensor
+            above: !input high_humidity_threshold
+        sequence:
+          - service: homeassistant.turn_on
+            target:
+              entity_id: !input target_switch
+
+      # Turn off after delay when humidity drops below low threshold
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input humidity_sensor
+            below: !input low_humidity_threshold
+        sequence:
+          - delay:
+              minutes: !input delay_off
+          - service: homeassistant.turn_off
+            target:
+              entity_id: !input target_switch
+
+mode: restart
